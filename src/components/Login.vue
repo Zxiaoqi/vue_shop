@@ -22,8 +22,8 @@
             </el-form-item>
             <!-- 按钮 -->
             <el-form-item class="btns">
-                <el-button type="primary" @click="submitForm">提交</el-button>
-                <el-button @click="resetForm">重置</el-button>
+                <el-button type="primary" @click="submitForm()">提交</el-button>
+                <el-button @click="resetForm()">重置</el-button>
             </el-form-item>
         </el-form>
     </div>
@@ -63,7 +63,7 @@ export default {
           if (res.meta.status === 200) {
             this.$message.success('登入成功')
             window.sessionStorage.setItem('token', res.data.token)
-            this.$router.push({ path: '/home' })
+            this.$router.push('/home')
           } else {
             // $message为element-ui的方法，可全局使用
             this.$message.error('密码错误，请重新输入！')

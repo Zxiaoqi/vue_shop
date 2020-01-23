@@ -29,6 +29,8 @@ router.beforeEach((to, from, next) => {
   if (to.path === '/login') return next()
   const tokenStr = window.sessionStorage.getItem('token')
   if (!tokenStr) return next('/login')
+  // !!!最后一定要调用next()方法，不然router不会执行
+  next()
 })
 
 export default router
