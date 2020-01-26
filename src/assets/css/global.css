@@ -3,3 +3,12 @@ html,body,#app{
     margin: 0;
     padding: 0;
 }
+.el-card {
+    margin: 20px;
+}
+.el-row{
+    margin-bottom: 20px;
+}
+.el-pagination{
+    padding-top: 20px;
+}
