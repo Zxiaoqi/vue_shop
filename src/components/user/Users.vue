@@ -285,9 +285,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.el-form-item{
-  padding-right: 15px
-}
 button.el-button--mini.is-circle{
   margin: 0 5px
 }
