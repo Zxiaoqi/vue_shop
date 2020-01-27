@@ -1,10 +1,10 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Login from '../components/Login'
-import Home from '../components/Home'
-import Welcome from '../components/Welcome'
-import Users from '../components/Users'
-// import Adduser from "../components/Adduser"
+import Login from '../components/user/Login'
+import Home from '../components/user/Home'
+import Welcome from '../components/user/Welcome'
+import Users from '../components/user/Users'
+// import Rights from "../components//power/Rights"
 Vue.use(VueRouter)
 
 const routes = [

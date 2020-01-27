@@ -1,13 +1,13 @@
 <template>
-  <div id="adduser">
-    <router-view></router-view>
+  <div id="rights">
+    rights
   </div>
 </template>
 
 <script>
 
 export default {
-  name: 'adduser'
+  name: 'rights'
 }
 </script>
 
