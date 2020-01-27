@@ -15,7 +15,7 @@
           </el-input>
         </el-col>
         <el-col :span="7">
-          <el-button type="primary" plain @click="showAddForm">添加用户</el-button>
+          <el-button type="primary" plain @click="adduserVisible = true">添加用户</el-button>
         </el-col>
       </el-row>
       <el-table
@@ -39,7 +39,7 @@
           @click='deleteUser(scope.row.id)'></el-button>
           <el-tooltip effect="dark" content="分配角色" placement="top-start" :enterable='false'>
             <el-button size="mini" icon="el-icon-user" circle
-            ></el-button>
+            @click="roleUser(scope.row.id)"></el-button>
           </el-tooltip>
           </template>
         </el-table-column>
@@ -55,11 +55,12 @@
       @current-change="handleCurrentChange">
       </el-pagination>
     </el-card>
+  <!-- 添加用户对话框 -->
     <el-dialog
-    :title="title"
+    title="添加用户"
     :visible.sync="adduserVisible"
     width="40%">
-      <el-form ref="addFormref" :model="addForm" :rules="rules" label-width="70px" class="demo-ruleForm">
+      <el-form ref="addFormref" :model="addForm" :rules="rules" label-width="70px">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="addForm.username"></el-input>
         </el-form-item>
@@ -75,7 +76,29 @@
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="adduserVisible = false">取 消</el-button>
-        <el-button type="primary" @click='submitUser()'>确 定</el-button>
+        <el-button type="primary" @click='addUser'>确 定</el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 编辑用户对话框 -->
+    <el-dialog
+    title="编辑用户"
+    :visible.sync="editDialogVisible"
+    width="40%" @close='editDialogClose'>
+      <el-form ref="editFormRef" :model="editForm" :rules="rules" label-width="70px">
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="editForm.username" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="editForm.email"></el-input>
+        </el-form-item>
+        <el-form-item label="手机" prop="mobile">
+          <el-input v-model="editForm.mobile"></el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="editUser">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -103,6 +126,7 @@ export default {
       userslist: [],
       total: 0,
       adduserVisible: false,
+      editDialogVisible: false,
       title: '',
       userId: 0,
       addForm: {
@@ -111,6 +135,7 @@ export default {
         email: '',
         mobile: ''
       },
+      editForm: {},
       rules: {
         username: [
           { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -144,15 +169,12 @@ export default {
         }
       })
     },
-    // 显示添加对话框
-    showAddForm () {
-      this.adduserVisible = true
-      this.title = '添加用户'
-    },
     // 添加用户数据
     addUser () {
       this.$refs.addFormref.validate(valid => {
-        this.adduserVisible = false
+        if (!valid) {
+          return false
+        }
         this.$http.post('users', this.addForm).then(res => {
           const { meta } = res.data
           if (meta.status === 201) {
@@ -168,41 +190,63 @@ export default {
     },
     // 显示编辑对话框
     showEditForm (id) {
-      this.title = '编辑用户'
-      this.adduserVisible = true
+      this.editDialogVisible = true
       this.userId = id
-    },
-    // 编辑用户数据
-    editUser () {
-      this.$http.put(`users/${this.userId}`, { params: this.addForm }).then(res => {
-        const { meta } = res.data
+      this.$http.get(`users/${id}`).then(res => {
+        const { data, meta } = res.data
         if (meta.status === 200) {
-          // console.log(data)
           this.$message.success(meta.msg)
-          this.adduserVisible = false
-          this.getUsersdata()
+          this.editForm = data
         } else {
           this.$message.error(meta.msg)
         }
       })
     },
-    // 复用提交用户按钮
-    submitUser () {
-      if (this.title === '添加用户') {
-        this.addUser()
-      } else if (this.title === '编辑用户') {
-        this.editUser()
-      }
-    },
-    deleteUser (id) {
-      this.$http.delete(`users/${id}`).then(res => {
-        const { meta } = res.data
-        if (meta.status === 200) {
-          this.$message.success(meta.msg)
-          this.getUsersdata()
-        } else {
-          this.$message.error(meta.msg)
+    // 编辑用户数据
+    editUser () {
+      this.$refs.editFormRef.validate(valid => {
+        if (!valid) {
+          return false
         }
+        this.$http.put(`users/${this.userId}`, { email: this.editForm.email,
+          mobile: this.editForm.mobile }).then(res => {
+          const { meta } = res.data
+          if (meta.status === 200) {
+          // console.log(data)
+            this.$message.success(meta.msg)
+            this.editDialogVisible = false
+            this.getUsersdata()
+          } else {
+            this.$message.error(meta.msg)
+          }
+        })
+      })
+    },
+    // 重置表单
+    editDialogClose () {
+      this.$refs.editFormRef.resetFields()
+    },
+    // 删除用户
+    deleteUser (id) {
+      this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.$http.delete(`users/${id}`).then(res => {
+          const { meta } = res.data
+          if (meta.status === 200) {
+            this.$message.success(meta.msg)
+            this.getUsersdata()
+          } else {
+            this.$message.error(meta.msg)
+          }
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
       })
     },
     // 显示页数
@@ -215,6 +259,10 @@ export default {
       this.pageinfo.pagenum = val
       this.getUsersdata()
     },
+    roleUser (id) {
+      this.$http.put(`users/${id}/role`)
+    },
+    // 获取用户数据
     getUsersdata () {
       this.$http.get('users', { params:
        this.pageinfo
@@ -240,4 +288,8 @@ export default {
 .el-form-item{
   padding-right: 15px
 }
+button.el-button--mini.is-circle{
+  margin: 0 5px
+}
+
 </style>
