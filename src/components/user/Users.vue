@@ -39,7 +39,7 @@
           @click='deleteUser(scope.row.id)'></el-button>
           <el-tooltip effect="dark" content="分配角色" placement="top-start" :enterable='false'>
             <el-button size="mini" icon="el-icon-user" circle
-            @click="roleUser(scope.row.id)"></el-button>
+            @click="assignRoles(scope.row)"></el-button>
           </el-tooltip>
           </template>
         </el-table-column>
@@ -101,6 +101,30 @@
         <el-button type="primary" @click="editUser">确 定</el-button>
       </span>
     </el-dialog>
+    <!-- 分配角色对话框 -->
+    <el-dialog
+    title="分配角色"
+    :visible.sync="assignRolesDialogVisible"
+    width="40%" @close="clearSelect">
+      <span>
+        <p>当前用户：{{userinfo.username}}</p>
+        <p>当前角色：{{userinfo.role_name}}</p>
+        <p>分配角色：
+          <el-select v-model="selectRole" placeholder="选择角色">
+            <el-option
+              v-for="item in rolesList"
+              :key="item.id"
+              :label="item.roleName"
+              :value="item.id">
+            </el-option>
+          </el-select>
+        </p>
+      </span>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="assignRolesDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="setUserRoles">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -127,6 +151,7 @@ export default {
       total: 0,
       adduserVisible: false,
       editDialogVisible: false,
+      assignRolesDialogVisible: false,
       title: '',
       userId: 0,
       addForm: {
@@ -153,7 +178,10 @@ export default {
           { required: true, message: '请输入手机号', trigger: 'blur' },
           { validator: checkMobile, trigger: ['blur', 'change'] }
         ]
-      }
+      },
+      userinfo: {},
+      rolesList: {},
+      selectRole: ''
     }
   },
   methods: {
@@ -259,8 +287,35 @@ export default {
       this.pageinfo.pagenum = val
       this.getUsersdata()
     },
-    roleUser (id) {
-      this.$http.put(`users/${id}/role`)
+    // 分配角色
+    // 获取角色列表
+    assignRoles (userinfo) {
+      this.userinfo = userinfo
+      this.assignRolesDialogVisible = true
+      this.$http.get('roles').then(res => {
+        const { data, meta } = res.data
+        if (meta.status === 200) {
+          this.rolesList = data
+        } else {
+          this.$message.error(meta.msg)
+        }
+      })
+    },
+    // 清空选择器
+    clearSelect () {
+      this.selectRole = ''
+    },
+    // 确定分配角色
+    setUserRoles () {
+      this.$http.put(`users/${this.userinfo.id}/role`, { rid: this.selectRole }).then(res => {
+        const { meta } = res.data
+        if (meta.status === 200) {
+          this.assignRolesDialogVisible = false
+          this.$message.success(meta.msg)
+        } else {
+          this.$message.error(meta.msg)
+        }
+      })
     },
     // 获取用户数据
     getUsersdata () {
@@ -288,5 +343,4 @@ export default {
 button.el-button--mini.is-circle{
   margin: 0 5px
 }
-
 </style>
