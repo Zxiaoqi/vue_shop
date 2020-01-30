@@ -124,7 +124,8 @@ export default {
         expandTrigger: 'hover',
         value: 'cat_id',
         label: 'cat_name',
-        children: 'children'
+        children: 'children',
+        checkStrictly: true
       },
       title: '',
       editId: 0
@@ -151,7 +152,7 @@ export default {
         .then(res => {
           const { data, meta } = res.data
           if (meta.status !== 200) {
-            return this.$message.error(meta.msg)
+            this.$message.error(meta.msg)
           }
           this.selectParentcate = data
         })
