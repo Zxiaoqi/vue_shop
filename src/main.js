@@ -5,6 +5,12 @@ import './plugins/element.js'
 import './assets/css/global.css'
 import './assets/css/font-icon.css'
 import ZkTable from 'vue-table-with-tree-grid'
+// 导入vue-quill-editor（富文本编辑器）
+import VueQuillEditor from 'vue-quill-editor'
+// 导入vue-quill-editor的样式
+import 'quill/dist/quill.core.css'
+import 'quill/dist/quill.snow.css'
+import 'quill/dist/quill.bubble.css'
 
 import axios from 'axios'
 // 先设置
@@ -25,6 +31,8 @@ Vue.prototype.$http = axios
 Vue.config.productionTip = false
 
 Vue.component('tree-table', ZkTable)
+
+Vue.use(VueQuillEditor)
 
 new Vue({
   router,
