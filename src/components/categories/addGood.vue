@@ -1,17 +1,17 @@
 <template>
     <div>
-        <el-page-header @back="goBack" content="添加商品">
+        <el-page-header @back="goBack" :content="title">
         </el-page-header>
         <!-- 面包屑导航 -->
         <el-breadcrumb separator="/">
             <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
             <el-breadcrumb-item>商品管理</el-breadcrumb-item>
-            <el-breadcrumb-item>添加商品</el-breadcrumb-item>
+            <el-breadcrumb-item>{{title}}</el-breadcrumb-item>
         </el-breadcrumb>
         <!-- 卡片视图区域 -->
         <el-card>
             <!-- 消息提示 -->
-            <el-alert title="添加商品信息" type="info" center show-icon :closable="false">
+            <el-alert :title="title+'信息'" type="info" center show-icon :closable="false">
             </el-alert>
 
             <!-- 步骤条组件 -->
@@ -37,13 +37,13 @@
                             <el-input v-model="addForm.goods_name"></el-input>
                         </el-form-item>
                         <el-form-item label="商品价格" prop="goods_price">
-                            <el-input v-model="addForm.goods_price" type="number"></el-input>
+                            <el-input v-model="addForm.goods_price" type="number" min=0></el-input>
                         </el-form-item>
                         <el-form-item label="商品重量" prop="goods_weight">
-                            <el-input v-model="addForm.goods_weight" type="number"></el-input>
+                            <el-input v-model="addForm.goods_weight" type="number" min=0></el-input>
                         </el-form-item>
                         <el-form-item label="商品数量" prop="goods_number">
-                            <el-input v-model="addForm.goods_number" type="number"></el-input>
+                            <el-input v-model="addForm.goods_number" type="number" min=0></el-input>
                         </el-form-item>
                         <el-form-item label="商品分类" prop="goods_cat">
                             <!-- 选择商品分类的级联选择框 -->
@@ -57,9 +57,10 @@
                         <el-form-item :label="item.attr_name" :key="item.attr_id"
                         v-for="item in manyTableData">
                             <!-- 使用数组渲染复选框组 -->
-                            <el-checkbox-group v-model="item.attr_vals">
+                            <el-checkbox-group v-model="checkArr.attr_vals">
                                 <el-checkbox border :label="val"
-                                v-for="(val,i) in item.attr_vals" :key="i"></el-checkbox>
+                                v-for="(val,i) in item.attr_vals"
+                                 :key="i">{{val}}</el-checkbox>
                             </el-checkbox-group>
                         </el-form-item>
                     </el-tab-pane>
@@ -83,14 +84,17 @@
                     :on-remove="handleRemove"
                     :on-success="handleSuccess"
                     list-type="picture"
+                    :multiple='false'
+                    :limit=1
                     :headers="headerObj">
                         <el-button size="small" type="primary">点击上传</el-button>
                     </el-upload>
                     </el-tab-pane>
                     <el-tab-pane label="商品内容" name="4">
+                      <!-- 富文本 -->
                         <quill-editor v-model="addForm.goods_introduce"></quill-editor>
                         <el-button type="primary" class="btnAdd"
-                        @click="add">添加商品</el-button>
+                        @click="selectSubmit(addForm.goods_id)">{{title}}</el-button>
                     </el-tab-pane>
                 </el-tabs>
             </el-form>
@@ -106,6 +110,8 @@ import _ from 'lodash'
 export default {
   data () {
     return {
+      // 操作商品
+      title: '',
       // 保存步骤条激活项索引
       activeIndex: '0',
       // 添加商品的表单数据对象
@@ -124,6 +130,8 @@ export default {
       headerObj: { Authorization: window.sessionStorage.getItem('token') },
       // 保存预览图片的url地址
       previewPath: '',
+      // 占位图片的url
+      // fileList: [{ name: 'jpeg.jpeg', url: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg' }],
       // 控制预览图片对话框的显示和隐藏
       previewVisible: false,
       // 验证规则
@@ -155,12 +163,18 @@ export default {
       },
       // 动态参数列表
       manyTableData: [],
+      checkArr: {},
       // 静态属性列表
       onlyTableData: []
     }
   },
   created () {
     this.getCateList()
+    // console.log(this.$route)
+    this.title = this.$route.params.title
+    if (this.$route.params.good) {
+      this.addForm = this.$route.params.good
+    }
   },
   methods: {
     async getCateList () {
@@ -190,13 +204,13 @@ export default {
         } else if (this.addForm.goods_name.trim() === '') {
           this.$message.error('请输入商品名称')
           return false
-        } else if (this.addForm.goods_price.trim() === '0') {
+        } else if (this.addForm.goods_price === 0) {
           this.$message.error('请输入商品价格')
           return false
-        } else if (this.addForm.goods_weight.trim() === '0') {
+        } else if (this.addForm.goods_weight === 0) {
           this.$message.error('请输入商品重量')
           return false
-        } else if (this.addForm.goods_number.trim() === '0') {
+        } else if (this.addForm.goods_number === 0) {
           this.$message.error('请输入商品数量')
           return false
         }
@@ -209,8 +223,10 @@ export default {
           const { data, meta } = res.data
           if (meta.status === 200) {
             data.forEach(item => {
-              item.attr_vals =
-            item.attr_vals.length === 0 ? [] : item.attr_vals.split(' ')
+              let arr = item.attr_vals.length === 0 ? [] : item.attr_vals.split(' ')
+              item.attr_vals = arr
+              let key = 'attr_vals'
+              this.$set(this.checkArr, key, arr)
             })
             this.manyTableData = data
           } else {
@@ -251,11 +267,16 @@ export default {
     // 将服务器返回的临时路径保存到addForm表单的pics数组中
       this.addForm.pics.push({ pic: response.data.tmp_path })
     },
-    add () {
+    submitGood (id) {
       this.$refs.addFormRef.validate(async valid => {
         if (!valid) return this.$message.error('请填写必要的表单项!')
         const form = _.cloneDeep(this.addForm)
-        form.goods_cat = form.goods_cat.join(',')
+        if (this.title === '添加商品') {
+          form.goods_cat = form.goods_cat.join(',')
+        }
+        if (this.title === '编辑商品') {
+          var { goods_id: idx, ...editForm } = form
+        }
         this.manyTableData.forEach(item => {
           form.attrs.push({ attr_id: item.attr_id, attr_value: item.attr_vals.join(' ') })
         })
@@ -263,14 +284,23 @@ export default {
         this.onlyTableData.forEach(item => {
           form.attrs.push({ attr_id: item.attr_id, attr_value: item.attr_vals })
         })
-        const { data: res } = await this.$http.post('goods', form)
+        const { data: res } = !id ? await this.$http.post('goods', form)
+          : await this.$http.put(`goods/${id}`, editForm)
         if (res.meta.status !== 201) {
-          return this.$message.error('添加商品失败')
+          return this.$message.error(res.meta.msg)
         }
-        this.$message.success('添加商品成功')
+        this.$message.success(res.meta.msg)
         // 编程式导航跳转到商品列表
         this.$router.push('/goods')
       })
+    },
+    selectSubmit (id) {
+      if (this.title === '添加商品') {
+        this.submitGood()
+      } else if (this.title === '编辑商品') {
+        // 编辑参数有问题
+        this.submitGood(id)
+      }
     }
   },
   computed: {
@@ -291,5 +321,10 @@ export default {
 }
 .el-button{
     margin:10px
+}
+.el-dialog__body{
+  img{
+    width: 100%
+  }
 }
 </style>

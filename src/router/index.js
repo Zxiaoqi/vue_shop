@@ -57,6 +57,7 @@ const routes = [
       },
       {
         path: '/goods/addGood',
+        name: 'addGood',
         component: addGood
       }
     ]

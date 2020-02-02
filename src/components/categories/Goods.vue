@@ -62,7 +62,8 @@ export default {
         pagesize: 7
       },
       total: 0,
-      goodForm: []
+      goodForm: [],
+      goodsId: ''
     }
   },
   methods: {
@@ -90,15 +91,17 @@ export default {
     },
     // 去添加页面
     goAddPage () {
-      this.$router.push('/goods/addGood')
+      this.$router.push({ name: 'addGood', params: { title: '添加商品' } })
     },
     // 编辑按钮
     showEditGoods (id) {
+      this.goodsId = id
       this.$http.get(`goods/${id}`).then(res => {
-        console.log(res)
         const { data, meta } = res.data
         if (meta.status === 200) {
           this.goodForm = data
+          // 跳转到编辑页面，带参数
+          this.$router.push({ name: 'addGood', params: { good: this.goodForm, title: '编辑商品' } })
         } else {
           this.$message.error(meta.msg)
         }
@@ -111,16 +114,20 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        this.$http.delete(`goods/${id}`).then(res => {
-          const { meta } = res.data
-          if (meta.status === 200) {
-            this.$message.success(meta.msg)
+        this.$http.all([
+          this.$http.delete(`goods/${id}`),
+          this.$http.put(`goods/${id}/pics`),
+          this.$http.put(`goods/${id}/attributes`)
+        ]).then(this.$http.spread((goodsRes, picsRes, attrRes) => {
+          const { meta } = goodsRes.data; const meta1 = picsRes.data.meta
+          const meta2 = attrRes.data.meta
+          if (meta.status === 200 && meta1.status === 200 && meta2.status === 200) {
+            this.$message.success('删除成功')
             this.getGoodsData()
           } else {
             this.$message.error(meta.msg)
           }
-        })
-        // this.$http.put(`goods/${id}/pics`)
+        }))
       }).catch(() => {
         this.$message({
           type: 'info',
