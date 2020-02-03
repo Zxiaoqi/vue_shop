@@ -35,7 +35,7 @@
                     <el-table-column type="expand">
                       <template slot-scope="scope">
                           <el-tag v-for="(item,i) in scope.row.attr_vals" :key="i"
-                          closable>
+                          closable @close="handleClose(i,scope.row)">
                             {{item}}
                           </el-tag>
                           <el-input
@@ -147,8 +147,9 @@ export default {
           { required: true, message: '请输入名称', trigger: 'blur' }
         ]
       },
-      cate: ''
-
+      cate: '',
+      inputVisible: false,
+      inputValue: ''
     }
   },
   computed: {
@@ -186,18 +187,19 @@ export default {
         this.$http.get(`categories/${id}/attributes`,
           { params: { sel: this.activeName } }).then(res => {
           const { data, meta } = res.data
+          data.forEach(item => {
+            item.attr_vals = item.attr_vals
+              ? item.attr_vals.split(' ') : []
+            item.inputVisible = false
+            item.inputValue = ''
+          })
+          // 处理好数据在赋值
           if (meta.status === 200) {
             if (this.activeName === 'many') {
               this.manyCateParams = data
             } else {
               this.onlyCateParams = data
             }
-            data.forEach(item => {
-              item.attr_vals = item.attr_vals
-                ? item.attr_vals.split(' ') : []
-              item.inputVisible = false
-              item.inputValue = ''
-            })
           } else {
             this.$message.error(meta.msg)
           }
@@ -305,7 +307,7 @@ export default {
     closeDialog () {
       this.$refs.addParamsFormRef.resetFields()
     },
-    // tag显示input,有bug， v-if无法显示隐藏input
+    // tag显示input
     showInput (row) {
       row.inputVisible = true
       this.$nextTick(_ => {
@@ -320,18 +322,16 @@ export default {
       row.inputVisible = false
       row.inputValue = ''
     },
-    saveAttrVals (row) {
-      this.$http.put(`categories/${row.cat_id}/attributes/${row.attr_id}`,
+    async saveAttrVals (row) {
+      const { data: res } = await this.$http.put(`categories/${row.cat_id}/attributes/${row.attr_id}`,
         { attr_sel: row.attr_sel,
           attr_name: row.attr_name,
-          attr_vals: row.attr_vals.join(' ') }).then(res => {
-        const { meta } = res.data
-        if (meta.status === 200) {
-          this.$message.success(meta.msg)
-        } else {
-          this.$message.error(meta.msg)
-        }
-      })
+          attr_vals: row.attr_vals.join(' ') })
+      if (res.meta.status === 200) {
+        this.$message.success(res.meta.msg)
+      } else {
+        this.$message.error(res.meta.msg)
+      }
     },
     handleClose (i, row) {
       row.attr_vals.splice(i, 1)
@@ -349,7 +349,7 @@ export default {
     margin-top: 15px
 }
 .el-tag + .el-tag {
-    margin-left: 10px;
+    margin: 5px;
   }
   .button-new-tag {
     margin-left: 10px;
