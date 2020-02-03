@@ -23,22 +23,24 @@
             <el-table :data="orderList" border stripe>
                 <el-table-column type="index"></el-table-column>
                 <el-table-column label="订单编号" prop="order_number"></el-table-column>
-                <el-table-column label="订单价格" prop="order_price"></el-table-column>
-                <el-table-column label="是否付款" prop="pay_status">
+                <el-table-column label="订单价格" prop="order_price" width="130px"></el-table-column>
+                <el-table-column label="是否付款" prop="pay_status" width="150px">
                     <template slot-scope="scope">
                         <el-tag type="success"
                         v-if="scope.row.pay_status === '1'">已付款</el-tag>
                         <el-tag type="danger" v-else>未付款</el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column label="是否发货" prop="is_send"></el-table-column>
+                <el-table-column label="是否发货" prop="is_send" width="140px"></el-table-column>
                 <el-table-column label="下单时间" prop="create_time">
                     <template slot-scope="scope">
                         {{scope.row.create_time | dateFormat}}
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="125px">
-                    <template>
+                <el-table-column label="操作" width="200px">
+                    <template slot-scope="scope">
+                        <el-button size="mini" type="info" icon="el-icon-s-order"
+                        @click="showOrderDialog(scope.row.order_id)"></el-button>
                         <el-button size="mini" type="primary" icon="el-icon-edit"
                         @click="showEditAddress"></el-button>
                         <el-button size="mini" type="success" icon="el-icon-location"
@@ -84,6 +86,50 @@
                 </el-timeline-item>
             </el-timeline>
         </el-dialog>
+        <!-- 订单信息 -->
+        <el-dialog title="订单信息" :visible.sync="orderDialogVisible" width="50%">
+          <el-form ref="orderMessageRef" :model="orderMessage"
+          :rules='orderRules' label-width="80px">
+            <el-form-item label="订单编号:">
+              <div>{{orderMessage.order_number}}</div>
+            </el-form-item>
+            <el-form-item label="订单价格" prop="order_price">
+              <el-input v-model='orderMessage.order_price' type="number" min=0></el-input>
+            </el-form-item>
+            <el-form-item label="订单数量" prop="order_number">
+              <el-input v-model='orderMessage.order_number' type="number" min=0></el-input>
+            </el-form-item>
+            <el-form-item label="订单支付">
+               <el-radio-group v-model="orderMessage.order_pay">
+                <el-radio :label="'0'">未支付</el-radio>
+                <el-radio :label="'1'">支付宝</el-radio>
+                <el-radio :label="'2'">微信</el-radio>
+                <el-radio :label="'3'">银行卡</el-radio>
+              </el-radio-group>
+            </el-form-item>
+            <el-form-item label="支付状态">
+              <el-switch v-model="orderMessage.pay_status"
+              active-value="1"
+              active-text="已付款"
+              inactive-value="0"
+              inactive-text="未付款"></el-switch>
+            </el-form-item>
+            <el-form-item label="是否发货">
+              <el-switch
+                v-model="orderMessage.is_send"
+                active-value="是"
+                active-text="是"
+                inactive-value="否"
+                inactive-text="否">
+              </el-switch>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="editOrder">确认</el-button>
+              <el-button @click='orderDialogVisible=false'>取消</el-button>
+            </el-form-item>
+          </el-form>
+          <!-- {{orderMessage}} -->
+        </el-dialog>
     </div>
 </template>
 
@@ -92,6 +138,7 @@ import cityData from './citydata.js'
 export default {
   data () {
     return {
+      // 订单列表
       orderList: [],
       // 查询条件
       queryInfo: {
@@ -101,6 +148,7 @@ export default {
       },
       total: 0,
       addressVisible: false,
+      // 地址
       addressForm: {
         address1: [],
         address2: ''
@@ -114,7 +162,15 @@ export default {
         expandTrigger: 'hover'
       },
       progressVisible: false,
-      progressInfo: []
+      progressInfo: [],
+      // 订单信息
+      orderMessage: [],
+      orderRules: {
+        order_price: [{ required: true, message: '请填写订单价格', trigger: 'blur' }],
+        order_number: [{ required: true, message: '请填写订单数量', trigger: 'blur' }]
+      },
+      orderDialogVisible: false,
+      orderId: ''
     }
   },
   created () {
@@ -149,6 +205,7 @@ export default {
     addressDialogClosed () {
       this.$refs.addressFormRef.resetFields()
     },
+    // 物流信息
     async showProgress () {
       const { data: res } = await this.$http.get(`/kuaidi/${804909574412544580}`)
       if (res.meta.status !== 200) {
@@ -157,6 +214,28 @@ export default {
       //   console.log(res.data)
       this.progressInfo = res.data
       this.progressVisible = true
+    },
+    showOrderDialog (id) {
+      this.$http.get(`orders/${id}`).then(res => {
+        const { data, meta } = res.data
+        if (meta.status !== 200) {
+          this.$message.error(meta.msg)
+        }
+        this.orderMessage = data
+        this.orderId = id
+        this.orderDialogVisible = true
+      })
+    },
+    editOrder () {
+      this.$refs.orderMessageRef.validate(async valid => {
+        if (!valid) return false
+        const { data: res } = await this.$http.put(`orders/${this.orderId}`,
+          this.orderMessage)
+        // 文档数据有误
+        if (res.meta.status !== 200) {
+          this.$message.error(res.meta.msg)
+        }
+      })
     }
   },
   filters: {
