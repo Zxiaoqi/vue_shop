@@ -49,7 +49,7 @@
                             <!-- 选择商品分类的级联选择框 -->
                             <el-cascader v-model="addForm.goods_cat"
                             :options="cateList" :props="cateProps"
-                            @change="handleChange" clearable></el-cascader>
+                            clearable></el-cascader>
                         </el-form-item>
                     </el-tab-pane>
                     <el-tab-pane label="商品参数" name="1">
@@ -184,12 +184,6 @@ export default {
         return this.$message.error('获取商品分类数据失败')
       }
       this.cateList = res.data
-    },
-    handleChange () {
-      // 如果用户选择的不是三级分类,该次选择无效，因为必须选择三级分类
-      if (this.addForm.goods_cat.length !== 3) {
-        this.addForm.goods_cat = []
-      }
     },
     // 返回商品列表页面
     goBack () {
